@@ -15,7 +15,7 @@ namespace CallCentreConsoleProject
 
             worker.PrintPart1();
 
-            worker.PrintPart2();
+            //worker.PrintPart2();
 
             Console.ReadKey();
         }

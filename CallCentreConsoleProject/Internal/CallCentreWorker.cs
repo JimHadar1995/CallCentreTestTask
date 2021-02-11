@@ -1,8 +1,11 @@
-﻿using CallCentreConsoleProject.Models;
+﻿using CallCentreConsoleProject.Internal.Comparers;
+using CallCentreConsoleProject.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CallCentreConsoleProject.Internal
 {
@@ -39,9 +42,17 @@ namespace CallCentreConsoleProject.Internal
 
             var dates = GetDates();
 
+            var concDict = new ConcurrentDictionary<DateTime, int>(1, dates.Count);
+
+            var coreCount = Environment.ProcessorCount;
+
+
+
             foreach (var date in dates)
             {
-                var dateRecords = _records.Where(_ => _.DateFrom >= date && _.DateTo <= date.AddDays(1).AddSeconds(-1)).ToList();
+                var dateRecords = _records
+                    .Where(_ => _.DateFrom >= date && _.DateTo <= date.AddDays(1).AddSeconds(-1))
+                    .ToList();
 
                 int maximum = dateRecords.Count > 0 ? 1 : 0;
 
@@ -69,10 +80,10 @@ namespace CallCentreConsoleProject.Internal
         {
             Parse();
 
-            Console.WriteLine(Environment.NewLine + 
+            Console.WriteLine(Environment.NewLine +
                 "###################################################################################################");
             Console.WriteLine("##                                          Отчет №2                                             ##");
-            Console.WriteLine("###################################################################################################" + 
+            Console.WriteLine("###################################################################################################" +
                 Environment.NewLine);
 
             var sw = new Stopwatch();
@@ -109,18 +120,19 @@ namespace CallCentreConsoleProject.Internal
 
         private int CountBefore(in List<CallCentreRecord> dateRecords, int curIndex)
         {
-            var curDateTime = dateRecords[curIndex];
             int count = 0;
+
+            var curDateTime = dateRecords[curIndex];
+
+            var recordsBefore = dateRecords.Take(curIndex).OrderBy(_ => _.DateTo).ToList();
 
             while (curIndex > 0)
             {
                 curIndex--;
 
-                var prevDateTime = dateRecords[curIndex];
+                var prevDateTime = recordsBefore[curIndex];
 
-                //для предыдущих дат проверяем только DateTo, так как DateFrom заведомо меньше текущей даты проверяемой, так как массив заранее был отсортирован
-                if (prevDateTime.DateTo >= curDateTime.DateFrom &&
-                    prevDateTime.DateTo <= curDateTime.DateTo)
+                if (curDateTime.DateFrom <= prevDateTime.DateTo)
                 {
                     count++;
                 }
@@ -144,9 +156,7 @@ namespace CallCentreConsoleProject.Internal
 
                 var nextDateTime = dateRecords[curIndex];
 
-                //Для последующих дат проверяем, чтобы DateTo текущей даты входило в диапазон последующей даты
-                if (curDateTime.DateTo >= nextDateTime.DateFrom &&
-                    curDateTime.DateTo <= nextDateTime.DateTo)
+                if (nextDateTime.DateFrom <= curDateTime.DateTo)
                 {
                     count++;
                 }

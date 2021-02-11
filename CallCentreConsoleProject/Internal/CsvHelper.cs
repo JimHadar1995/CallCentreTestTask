@@ -1,4 +1,5 @@
-﻿using CallCentreConsoleProject.Models;
+﻿using CallCentreConsoleProject.Internal.Comparers;
+using CallCentreConsoleProject.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -42,29 +43,11 @@ namespace CallCentreConsoleProject.Internal
                     records.Add(record);
                 }
             }
-            records.Sort(new RecordComparer());
+
+            records.Sort(new DateFromRecordComparer());
+
             return records;
         }
-
-        private class RecordComparer : IComparer<CallCentreRecord>
-        {
-            public int Compare(CallCentreRecord? x, CallCentreRecord? y)
-            {
-                if (x == null && y != null)
-                {
-                    return -1;
-                }
-                if (x != null && y == null)
-                {
-                    return 1;
-                }
-                if (ReferenceEquals(x, y) || x == null && y == null)
-                {
-                    return 0;
-                }
-
-                return x!.DateFrom.CompareTo(y!.DateFrom);
-            }
-        }
+        
     }
 }
