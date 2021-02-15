@@ -46,7 +46,7 @@ namespace CallCentreConsoleProject.Internal
             {
                 var dateRecords = _records.Where(_ => _.DateFrom >= date && _.DateFrom <= date.AddDays(1).AddSeconds(-1)).ToList();
 
-                int maximum = dateRecords.Count > 0 ? 1 : 0;
+                int maximum = 0;
 
                 var endDateTimes = new List<DateTime>(dateRecords.Count);
 
@@ -54,11 +54,9 @@ namespace CallCentreConsoleProject.Internal
                 {
                     endDateTimes.Add(dateRecord.DateTo);
 
-                    while (endDateTimes.Min() <= dateRecord.DateFrom)
+                    while (endDateTimes.Min() < dateRecord.DateFrom)
                     {
                         endDateTimes.Remove(endDateTimes.Min());
-                        if (!endDateTimes.Any())
-                            break;
                     }
 
                     maximum = Math.Max(maximum, endDateTimes.Count);
