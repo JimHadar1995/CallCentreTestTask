@@ -42,28 +42,26 @@ namespace CallCentreConsoleProject.Internal
 
             var dates = GetDates();
 
-            var concDict = new ConcurrentDictionary<DateTime, int>(1, dates.Count);
-
-            var coreCount = Environment.ProcessorCount;
-
-
-
             foreach (var date in dates)
             {
-                var dateRecords = _records
-                    .Where(_ => _.DateFrom >= date && _.DateTo <= date.AddDays(1).AddSeconds(-1))
-                    .ToList();
+                var dateRecords = _records.Where(_ => _.DateFrom >= date && _.DateFrom <= date.AddDays(1).AddSeconds(-1)).ToList();
 
                 int maximum = dateRecords.Count > 0 ? 1 : 0;
 
-                for (int i = 0; i < dateRecords.Count; i++)
-                {
-                    int countBefore = CountBefore(dateRecords, i);
-                    int countAfter = CountAfter(dateRecords, i);
-                    int allCount = countAfter + countBefore + 1;
+                var endDateTimes = new List<DateTime>(dateRecords.Count);
 
-                    if (maximum < allCount)
-                        maximum = allCount;
+                foreach (var dateRecord in dateRecords)
+                {
+                    endDateTimes.Add(dateRecord.DateTo);
+
+                    while (endDateTimes.Min() <= dateRecord.DateFrom)
+                    {
+                        endDateTimes.Remove(endDateTimes.Min());
+                        if (!endDateTimes.Any())
+                            break;
+                    }
+
+                    maximum = Math.Max(maximum, endDateTimes.Count);
                 }
 
                 Console.WriteLine($"{date:d} {maximum}");
@@ -108,65 +106,14 @@ namespace CallCentreConsoleProject.Internal
 
         private IReadOnlyList<DateTime> GetDates()
         {
-            var minday = _records.First().DateFrom.Date;
-            var maxday = _records.Last().DateTo.Date;
+            var minday = _records.Min(_ => _.DateFrom);
+            var maxday = _records.Max(_ => _.DateTo);
 
             var days = Enumerable.Range(0, 1 + maxday.Date.Subtract(minday.Date).Days)
                .Select(offset => minday.AddDays(offset))
                .ToList();
 
             return days;
-        }
-
-        private int CountBefore(in List<CallCentreRecord> dateRecords, int curIndex)
-        {
-            int count = 0;
-
-            var curDateTime = dateRecords[curIndex];
-
-            var recordsBefore = dateRecords.Take(curIndex).OrderBy(_ => _.DateTo).ToList();
-
-            while (curIndex > 0)
-            {
-                curIndex--;
-
-                var prevDateTime = recordsBefore[curIndex];
-
-                if (curDateTime.DateFrom <= prevDateTime.DateTo)
-                {
-                    count++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return count;
-        }
-
-        private int CountAfter(in List<CallCentreRecord> dateRecords, int curIndex)
-        {
-            var curDateTime = dateRecords[curIndex];
-            int count = 0;
-
-            while (curIndex < dateRecords.Count - 1)
-            {
-                curIndex++;
-
-                var nextDateTime = dateRecords[curIndex];
-
-                if (nextDateTime.DateFrom <= curDateTime.DateTo)
-                {
-                    count++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            return count;
         }
 
         private void Parse()
